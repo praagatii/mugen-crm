@@ -1,0 +1,12 @@
+com\mugencrm\ai\AiController.class
+com\mugencrm\lead\LeadRepository.class
+com\mugencrm\lead\Lead.class
+com\mugencrm\lead\LeadController.class
+com\mugencrm\MugenCrmApplication.class
+com\mugencrm\lead\LeadService.class
+com\mugencrm\config\CorsConfig.class
+com\mugencrm\ai\AiService.class
+com\mugencrm\config\SettingsHolder.class
+com\mugencrm\settings\SettingsController.class
+com\mugencrm\config\CorsConfig$1.class
+com\mugencrm\lead\ScraperService.class
