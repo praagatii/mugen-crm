@@ -1,0 +1,223 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --color-primary: #ffffff;
+  --color-muted: #6B7280;
+  --color-border: #202020;
+  --color-surface: #171717;
+  --color-accent: #7C89B0;
+  --color-accent-light: #909CC2;
+  --color-ink: #ffffff;
+  --color-canvas: #111111;
+  --color-hairline: #202020;
+}
+
+html { overflow: hidden; }
+body { overflow: auto; height: 100%; }
+.lenis.lenis-smooth { scroll-behavior: auto; }
+.lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #111111;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+}
+
+/* ─── Page Container ─── */
+.page-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* ─── Tile ─── */
+.tile {
+  background: #171717;
+  border-radius: 0;
+  padding: 28px;
+}
+
+/* ─── Tile Typography ─── */
+.tile-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  display: block;
+}
+
+.tile-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 32px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  margin-top: 8px;
+}
+
+.tile-value-sm {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 18px;
+  font-weight: 500;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.tile-sub {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: block;
+  margin-top: 4px;
+}
+
+/* ─── Section Title ─── */
+.section-title {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 20px;
+}
+
+/* ─── Nav ─── */
+.nav-link {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6B7280;
+  padding: 10px 24px;
+  border-radius: 0;
+  transition: all 0.15s;
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  display: block;
+}
+.nav-link:hover { color: #ffffff; background: #1a1a1a; }
+.nav-link.active { color: #ffffff; background: #202020; }
+
+/* ─── Buttons ─── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; font-size: 11px; font-weight: 500; padding: 6px 14px;
+  border-radius: 0; border: none; cursor: pointer; transition: all 0.15s;
+  line-height: 1; letter-spacing: 0.02em;
+  font-family: 'IBM Plex Mono', monospace;
+  background: #202020; color: #ffffff;
+}
+.btn:hover { background: #2a2a2a; }
+.btn:disabled { opacity: 0.3; cursor: default; }
+
+.btn-primary { background: #7C89B0; color: #111111; }
+.btn-primary:hover { background: #909CC2; }
+.btn-primary:disabled { opacity: 0.3; cursor: default; }
+.btn-secondary { background: transparent; color: #6B7280; border: 1px solid #202020; }
+.btn-secondary:hover { border-color: #2a2a2a; color: #ffffff; }
+
+.btn-icon {
+  background: transparent; border: none; cursor: pointer;
+  color: #6B7280; padding: 4px 8px; font-size: 12px;
+  transition: color 0.15s; border-radius: 0;
+}
+.btn-icon:hover { color: #ffffff; background: #202020; }
+
+/* ─── Inputs ─── */
+.input {
+  background: #202020; border: 1px solid #2a2a2a; border-radius: 0;
+  padding: 8px 12px; color: #ffffff; width: 100%; outline: none;
+  font-size: 12px; font-family: 'IBM Plex Mono', monospace;
+  transition: border-color 0.15s;
+}
+.input:focus { border-color: #7C89B0; }
+.input::placeholder { color: #4B5563; }
+
+.calendar-input {
+  background: #202020; border: 1px solid #2a2a2a; border-radius: 0;
+  padding: 8px 12px; color: #ffffff; width: 100%; outline: none;
+  font-size: 12px; font-family: 'IBM Plex Mono', monospace;
+  transition: border-color 0.15s; flex: 1;
+}
+.calendar-input:focus { border-color: #7C89B0; }
+.calendar-input::placeholder { color: #4B5563; }
+
+/* ─── Priority Badge ─── */
+.priority-badge {
+  display: inline-flex; align-items: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; font-weight: 500;
+  padding: 2px 6px; border-radius: 0; line-height: 1;
+  letter-spacing: 0.04em;
+  background: #202020;
+}
+.priority-badge.high { color: #ffffff; }
+.priority-badge.medium { color: #ffffff; }
+.priority-badge.low { color: #6B7280; }
+
+/* ─── Card (legacy) ─── */
+.card {
+  background: #171717; border: none; border-radius: 0;
+  box-shadow: none;
+}
+
+/* ─── Stat Box ─── */
+.stat-box {
+  background: #171717; border-radius: 0; padding: 28px;
+}
+
+/* ─── Calendar ─── */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.tile-calendar { min-height: 360px; }
+
+.calendar-day-header {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; font-weight: 500;
+  color: #4B5563; text-align: center;
+  padding: 6px 0; letter-spacing: 0.05em;
+}
+
+.calendar-day {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; font-weight: 400;
+  color: #9CA3AF; text-align: center;
+  padding: 8px 0; cursor: pointer;
+  border-radius: 0; position: relative;
+  transition: all 0.1s;
+}
+.calendar-day:hover { background: #202020; color: #ffffff; }
+.calendar-day.selected { outline: 1px solid #7C89B0; outline-offset: -1px; color: #ffffff; }
+.calendar-day.today { font-weight: 600; background: #7C89B0; color: #ffffff; }
+
+.calendar-dot {
+  width: 3px; height: 3px; border-radius: 0;
+  background: #7C89B0;
+  position: absolute; bottom: 3px; left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2a2a; border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: #3a3a3a; }
