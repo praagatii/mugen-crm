@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getLeads, toggleStatus, updateNotes, tidyLeads, generateMessages, scoreLeads } from '../services/api.js'
+import { getLeads, toggleStatus, updateNotes, tidyLeads, generateMessages, scoreLeads, deleteAllLeads } from '../services/api.js'
 
 function cleanPhone(p) {
   if (!p) return ''
@@ -52,7 +52,10 @@ export default function LeadsPage() {
     const ids = Array.from(selected).slice(0, 10)
     ids.forEach(id => {
       const l = leads.find(x => x.id === id)
-      if (l?.phone) window.open(`https://wa.me/${cleanPhone(l.phone)}`, '_blank')
+      if (l?.phone) {
+        const text = encodeURIComponent(messages[id] || '')
+        window.open(`https://wa.me/${cleanPhone(l.phone)}?text=${text}`, '_blank')
+      }
     })
     setShowQueue(false); setSelected(new Set())
   }
@@ -77,6 +80,9 @@ export default function LeadsPage() {
             className="btn" style={{fontSize:"10px", padding:"6px 12px"}}>TIDY NAMES</button>
           <button onClick={async () => { await scoreLeads(); fetch(); show('LEADS SCORED') }}
             className="btn" style={{fontSize:"10px", padding:"6px 12px"}}>SCORE ALL</button>
+          <button onClick={async () => {
+            if (window.confirm('Delete all leads?')) { await deleteAllLeads(); fetch(); show('ALL LEADS DELETED') }
+          }} className="btn" style={{fontSize:"10px", padding:"6px 12px", color:"#ef4444"}}>DELETE ALL</button>
         </div>
       </div>
 

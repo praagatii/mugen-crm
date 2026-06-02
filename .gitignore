@@ -1,0 +1,12 @@
+node_modules/
+backend/target/
+backend/data/
+backend/*.log
+backend/*.err
+frontend/node_modules/
+frontend/dist/
+frontend/*.log
+frontend/*.err
+.vite/
+*.log
+*.err

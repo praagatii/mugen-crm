@@ -15,8 +15,8 @@ import java.net.http.HttpResponse;
 @Service
 public class AiService {
 
-    private static final String NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-    private static final String MODEL = "meta/llama-3.1-8b-instruct";
+    private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
+    private static final String MODEL = "meta-llama/llama-3.1-8b-instruct";
 
     private final SettingsHolder settings;
     private final HttpClient client;
@@ -31,34 +31,23 @@ public class AiService {
     public String tidyBusinessName(String rawName) {
         if (rawName == null || rawName.isBlank()) return rawName;
         String[] words = rawName.trim().split("\\s+");
-        if (words.length <= 6) return rawName.trim();
+        if (words.length <= 4) return rawName.trim();
 
         String apiKey = settings.getNvidiaApiKey();
         if (apiKey == null || apiKey.isBlank()) return rawName.trim();
 
         String prompt = "Extract ONLY the core business brand name from this listing. Remove ALL of the following: location suffixes, SEO keywords, descriptions, promotional text, practice descriptors (Clinic, Hospital, Polyclinic, Diagnostics, Centre, Center, Preschool, Daycare, Play School, Academy, Institute, Services, Solutions, Care, Pharmacy, Laboratory, Nursing Home, Medical Centre, Speciality, Super Speciality, Orthopaedics, Neurology, Cardiology, Dental, Skin, ENT, Eye, Maternity, Child, Cancer, Diabetes, Heart, Sports Medicine, Nephrology, Liver, Gastro, Gen Medicine, Physician, Surgeon, Gynecologist, Paediatric, Dermatologist, Orthopaedic, etc.). Return ONLY the distinctive establishment brand name, nothing else. Do NOT use quotes.\n\nExamples:\n\"Veturi Polyclinic & Diagnostic Centre\" → Veturi\n\"SPARSH Hospital, RR Nagar\" → SPARSH\n\"RxDx Clinics, Rajarajeshwari (RR) Nagar\" → RxDx\n\"Shree Tibbadevi Clinic\" → Shree Tibbadevi\n\"WHITE PETALS PRE-SCHOOL - RR Nagar\" → WHITE PETALS\n\"The Child's Kingdom Preschool & Daycare, Rajarajeshwari Nagar, Bengaluru | Best Preschool In Rajarajeshwari Nagar\" → The Child's Kingdom\n\nInput: \"" + rawName + "\"\nOutput:";
 
-        String result = callNvidia(prompt);
+        String result = callAI(prompt);
         return result.replace("\"", "").replace("'", "").trim();
     }
 
     public String generateOutreachMessage(String businessName, boolean hasWebsite) {
-        String apiKey = settings.getNvidiaApiKey();
-        if (apiKey == null || apiKey.isBlank()) return "";
-
-        String angle = hasWebsite
-            ? "your online presence doesn't quite reflect the quality of the business itself. In a world where most first impressions happen online, that feels like a missed opportunity."
-            : "you don't have an online presence yet. In a world where most first impressions happen online, having no web presence means you're invisible to potential customers.";
-
-        String prompt = "Write a short, friendly business outreach message to " + businessName + ". The message should:\n"
-            + "- Start with: 'Hi, We came across " + businessName + " recently and genuinely loved what you're building.'\n"
-            + "- Mention: " + angle + "\n"
-            + "- Say: At Mugen, we design and build websites for brands we believe have something worth sharing, and yours was one of the few that caught our attention.\n"
-            + "- End with: No hard sell. We simply wanted to reach out because we see a lot of potential there. If you'd ever like to explore a few ideas together, we'd love to chat.\n"
-            + "- Sign off with: — Mugen\n\n"
-            + "Keep it natural and conversational. Output only the message, no preamble.";
-
-        return callNvidia(prompt);
+        return "Hey, I came across " + businessName + " and genuinely loved what you\u2019re building.\n\n"
+            + "I\u2019m Raghu from Mugen Studio \u2014 \u201cMugen\u201d means infinity , inspired by the idea of infinite possibilities and bringing unique stories to life.\n\n"
+            + "I felt like " + businessName + " has its own personality and story, and we\u2019d love to create a website that captures that \u2014 something that feels like you, not just another page online.\n\n"
+            + "Would love to share some ideas if you\u2019re open to it :)\n\n"
+            + "\u2014 Mugen \n\nhttps://studio-mugen.com/";
     }
 
     public String scorePriority(String name, String website, Double rating, Integer reviewCount) {
@@ -81,13 +70,13 @@ public class AiService {
             + "- Large franchise/chain with strong online presence → LOW priority\n\n"
             + "Reply with exactly one word: HIGH, MEDIUM, or LOW";
 
-        String result = callNvidia(prompt).trim().toUpperCase();
+        String result = callAI(prompt).trim().toUpperCase();
         if (result.contains("HIGH")) return "HIGH";
         if (result.contains("LOW")) return "LOW";
         return "MEDIUM";
     }
 
-    private String callNvidia(String prompt) {
+    private String callAI(String prompt) {
         try {
             String apiKey = settings.getNvidiaApiKey();
             if (apiKey == null || apiKey.isBlank()) return "";
@@ -105,9 +94,11 @@ public class AiService {
             String json = mapper.writeValueAsString(body);
 
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(NVIDIA_API_URL))
+                .uri(URI.create(API_URL))
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
+                .header("HTTP-Referer", "http://localhost:3000")
+                .header("X-Title", "Mugen CRM")
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
@@ -118,8 +109,10 @@ public class AiService {
                 String text = root.path("choices").get(0).path("message").path("content").asText("");
                 return text.trim();
             }
+            System.err.println("[AiService] AI API returned " + response.statusCode() + ": " + response.body());
             return "";
         } catch (Exception e) {
+            System.err.println("[AiService] AI API call failed: " + e.getMessage());
             return "";
         }
     }

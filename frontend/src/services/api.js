@@ -67,6 +67,12 @@ export async function scrapeGmaps(query) {
   return res.json()
 }
 
+export async function deleteAllLeads() {
+  const res = await fetch(API, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Delete all failed')
+  return res.json()
+}
+
 export async function importLeads(leads) {
   const res = await fetch(`${API}/import`, {
     method: 'POST',

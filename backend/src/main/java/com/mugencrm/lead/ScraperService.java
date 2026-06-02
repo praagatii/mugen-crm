@@ -44,18 +44,23 @@ public class ScraperService {
                 page.waitForSelector("div[role='feed']", new Page.WaitForSelectorOptions().setTimeout(10000));
             } catch (Exception ignored) {}
 
-            for (int scroll = 0; scroll < 6; scroll++) {
-                page.evaluate("document.querySelector('div[role=\\'feed\\']')?.scrollBy(0, 2000)");
-                page.waitForTimeout(1500);
+            for (int scroll = 0; scroll < 15; scroll++) {
+                page.evaluate("document.querySelector('div[role=\\'feed\\']')?.scrollBy(0, 3000)");
+                page.waitForTimeout(2000);
             }
 
+            page.waitForTimeout(2000);
+
             List<ElementHandle> cards = page.querySelectorAll("a[href*='/maps/place/']");
-            int limit = Math.min(cards.size(), 20);
+            int limit = Math.min(cards.size(), 60);
             for (int i = 0; i < limit; i++) {
                 try {
                     Map<String, Object> item = extractListing(context, cards.get(i));
-                    if (item != null && !item.get("phone").toString().isBlank()) {
-                        results.add(item);
+                    if (item != null) {
+                        String ws = (String) item.get("website");
+                        if (ws == null || ws.isBlank()) {
+                            results.add(item);
+                        }
                     }
                 } catch (Exception ignored) {}
             }
@@ -64,6 +69,52 @@ public class ScraperService {
             if (context != null) context.close();
         }
         return results;
+    }
+
+    public Map<String, String> searchBusinessInfo(String query) {
+        BrowserContext ctx = null;
+        Page page = null;
+        try {
+            ctx = getBrowser().newContext(new Browser.NewContextOptions()
+                .setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                .setViewportSize(1920, 1080));
+            page = ctx.newPage();
+
+            String url = "https://www.google.com/search?q=" + java.net.URLEncoder.encode(query + " phone website", "UTF-8");
+            page.navigate(url, new Page.NavigateOptions().setTimeout(15000).setWaitUntil(WaitUntilState.DOMCONTENTLOADED));
+            page.waitForTimeout(2000);
+
+            String html = page.content();
+
+            Map<String, String> result = new java.util.LinkedHashMap<>();
+
+            Pattern phonePattern = Pattern.compile("[\\(\\+]?\\d{1,4}[\\)\\-\\s]?\\d{3,4}[\\)\\-\\s]?\\d{3,4}[\\)\\-\\s]?\\d{3,4}");
+            Matcher phoneMatcher = phonePattern.matcher(html);
+            if (phoneMatcher.find()) {
+                String p = phoneMatcher.group().trim();
+                if (p.length() >= 10) result.put("phone", p);
+            }
+
+            List<ElementHandle> links = page.querySelectorAll("a[href]");
+            for (ElementHandle link : links) {
+                String href = link.getAttribute("href");
+                if (href != null && href.startsWith("/url?q=") && !href.contains("google.com")
+                    && !href.contains("facebook.com") && !href.contains("instagram.com")) {
+                    String site = href.replace("/url?q=", "").split("&")[0];
+                    if (site.startsWith("http") && !site.contains("webcache")) {
+                        result.put("website", site);
+                        break;
+                    }
+                }
+            }
+
+            return result;
+        } catch (Exception e) {
+            return new java.util.LinkedHashMap<>();
+        } finally {
+            if (page != null) page.close();
+            if (ctx != null) ctx.close();
+        }
     }
 
     private Map<String, Object> extractListing(BrowserContext context, ElementHandle card) {

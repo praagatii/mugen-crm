@@ -2,30 +2,26 @@ package com.mugencrm.lead;
 
 import com.mugencrm.ai.AiService;
 import com.opencsv.CSVReader;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStreamReader;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 public class LeadService {
 
     private final LeadRepository repository;
     private final AiService aiService;
+    private final ScraperService scraperService;
 
-    public LeadService(LeadRepository repository, AiService aiService) {
+    public LeadService(LeadRepository repository, AiService aiService, ScraperService scraperService) {
         this.repository = repository;
         this.aiService = aiService;
+        this.scraperService = scraperService;
     }
 
     public List<Lead> getAllLeads(String search, Boolean filterReached) {
@@ -88,7 +84,7 @@ public class LeadService {
             String website = lead.getWebsite();
 
             if (phone == null || phone.isBlank() || website == null || website.isBlank()) {
-                Map<String, String> info = searchBusinessInfo(rawName);
+                Map<String, String> info = scraperService.searchBusinessInfo(rawName);
                 if ((phone == null || phone.isBlank()) && info.containsKey("phone")) {
                     phone = info.get("phone");
                 }
@@ -103,38 +99,6 @@ public class LeadService {
             if (website != null && !website.isBlank()) lead.setWebsite(website);
         }
         return repository.saveAll(leads);
-    }
-
-    private Map<String, String> searchBusinessInfo(String query) {
-        Map<String, String> result = new java.util.HashMap<>();
-        try {
-            String url = "https://www.google.com/search?q=" + URLEncoder.encode(query + " phone website", "UTF-8");
-            Document doc = Jsoup.connect(url)
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
-                .timeout(10000)
-                .get();
-
-            String html = doc.html();
-
-            Pattern phonePattern = Pattern.compile("[\\(\\+]?\\d{1,4}[\\)\\-\\s]?\\d{3,4}[\\)\\-\\s]?\\d{3,4}[\\)\\-\\s]?\\d{3,4}");
-            Matcher phoneMatcher = phonePattern.matcher(html);
-            if (phoneMatcher.find()) {
-                String p = phoneMatcher.group().trim();
-                if (p.length() >= 10) result.put("phone", p);
-            }
-
-            for (Element link : doc.select("a[href]")) {
-                String href = link.attr("href");
-                if (href.startsWith("/url?q=") && !href.contains("google.com") && !href.contains("facebook.com") && !href.contains("instagram.com")) {
-                    String site = href.replace("/url?q=", "").split("&")[0];
-                    if (site.startsWith("http") && !site.contains("webcache")) {
-                        result.put("website", site);
-                        break;
-                    }
-                }
-            }
-        } catch (Exception ignored) {}
-        return result;
     }
 
     public List<Lead> scoreAllLeads() {
@@ -156,6 +120,10 @@ public class LeadService {
             messages.put(id, msg);
         }
         return messages;
+    }
+
+    public void deleteAll() {
+        repository.deleteAll();
     }
 
     public int importLeads(List<Map<String, Object>> leadsData) {
