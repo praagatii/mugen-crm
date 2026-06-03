@@ -50,30 +50,40 @@ public class AiService {
             + "\u2014 Mugen \n\nhttps://studio-mugen.com/";
     }
 
-    public String scorePriority(String name, String website, Double rating, Integer reviewCount) {
+    public Integer scoreOpportunity(String name, String website, Double rating, Integer reviewCount) {
         String apiKey = settings.getNvidiaApiKey();
-        if (apiKey == null || apiKey.isBlank()) return "MEDIUM";
+        if (apiKey == null || apiKey.isBlank()) return 50;
 
         String ratingStr = rating != null ? String.format("%.1f", rating) : "N/A";
         String reviewsStr = reviewCount != null ? reviewCount.toString() : "N/A";
         String siteInfo = (website == null || website.isBlank()) ? "No website" : website;
 
-        String prompt = "Analyze this business and determine how likely they would need professional web design services.\n\n"
+        String prompt = "You are a sales prioritization assistant for Mugen Studio, a web design agency. "
+            + "Score this business from 0 to 100 on how badly they need a website and how likely they are to become a Mugen client.\n\n"
             + "Business: " + name + "\n"
             + "Website: " + siteInfo + "\n"
             + "Rating: " + ratingStr + "/5\n"
             + "Reviews: " + reviewsStr + "\n\n"
-            + "Consider:\n"
-            + "- No website or basic URL (facebook, blogspot) → HIGH priority\n"
-            + "- Local independent business with basic website → MEDIUM priority\n"
-            + "- Well-established brand with professional custom website → LOW priority\n"
-            + "- Large franchise/chain with strong online presence → LOW priority\n\n"
-            + "Reply with exactly one word: HIGH, MEDIUM, or LOW";
+            + "INCREASE score (+15-30) for:\n"
+            + "- No website found\n"
+            + "- Website link missing (only social media presence)\n"
+            + "- Good offline reputation but weak digital presence\n"
+            + "- High reviews / customer interest but poor online conversion\n"
+            + "- Strong visual businesses where websites matter: cafes, salons, restaurants, clinics, gyms, boutiques, creators, studios, service businesses\n\n"
+            + "DECREASE score (-15-30) for:\n"
+            + "- Already has a professional website\n"
+            + "- Strong SEO and complete digital presence\n"
+            + "- Already polished online experience\n\n"
+            + "IMPORTANT: Reply ONLY with a single number between 0 and 100. No words, no explanation, no punctuation.";
 
-        String result = callAI(prompt).trim().toUpperCase();
-        if (result.contains("HIGH")) return "HIGH";
-        if (result.contains("LOW")) return "LOW";
-        return "MEDIUM";
+        String result = callAI(prompt).trim();
+        try {
+            int score = Integer.parseInt(result.replaceAll("[^0-9]", ""));
+            return Math.max(0, Math.min(100, score));
+        } catch (NumberFormatException e) {
+            System.err.println("[AiService] Could not parse score from: " + result);
+            return 50;
+        }
     }
 
     private String callAI(String prompt) {

@@ -66,10 +66,7 @@ export default function LeadsPage() {
     catch { show('FAILED TO GENERATE', 'error') }
   }
 
-  const sorted = [...leads].sort((a, b) => {
-    const o = { HIGH: 0, MEDIUM: 1, LOW: 2 }
-    return (o[a.priority] ?? 3) - (o[b.priority] ?? 3)
-  })
+  const sorted = [...leads].sort((a, b) => (b.opportunityScore ?? 0) - (a.opportunityScore ?? 0))
 
   return (
     <div className="page-container">
@@ -153,8 +150,10 @@ export default function LeadsPage() {
                     style={{accentColor:"#7C89B0", width:"14px", height:"14px", cursor:"pointer"}} />
                 </td>
                 <td style={{padding:"10px 8px", verticalAlign:"middle"}}>
-                  {lead.priority
-                    ? <span className={`priority-badge ${lead.priority.toLowerCase()}`}>{lead.priority}</span>
+                  {lead.opportunityScore != null
+                    ? <span className={`priority-badge ${(lead.opportunityScore >= 80 ? 'hot' : lead.opportunityScore >= 50 ? 'potential' : 'low')}`}>
+                        {lead.opportunityScore} {lead.opportunityScore >= 80 ? '🔥' : lead.opportunityScore >= 50 ? '✨' : ''}
+                      </span>
                     : <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#4B5563"}}>—</span>}
                 </td>
                 <td style={{padding:"10px 8px", verticalAlign:"middle"}}>

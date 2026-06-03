@@ -167,8 +167,8 @@ body {
   letter-spacing: 0.04em;
   background: #202020;
 }
-.priority-badge.high { color: #ffffff; }
-.priority-badge.medium { color: #ffffff; }
+.priority-badge.hot { color: #ffffff; background: #dc2626; }
+.priority-badge.potential { color: #ffffff; background: #7C89B0; }
 .priority-badge.low { color: #6B7280; }
 
 /* ─── Card (legacy) ─── */

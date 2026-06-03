@@ -104,8 +104,11 @@ public class LeadService {
     public List<Lead> scoreAllLeads() {
         List<Lead> leads = repository.findAll();
         for (Lead lead : leads) {
-            String priority = aiService.scorePriority(lead.getName(), lead.getWebsite(), lead.getRating(), lead.getReviewCount());
-            lead.setPriority(priority);
+            Integer score = aiService.scoreOpportunity(lead.getName(), lead.getWebsite(), lead.getRating(), lead.getReviewCount());
+            lead.setOpportunityScore(score);
+            if (score >= 80) lead.setPriority("HOT");
+            else if (score >= 50) lead.setPriority("POTENTIAL");
+            else lead.setPriority("LOW");
         }
         return repository.saveAll(leads);
     }

@@ -34,7 +34,7 @@ export default function SettingsPage() {
           <input className="input" type="password" placeholder="sk-or-v1-..." value={apiKey} onChange={e => setApiKey(e.target.value)}
             style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"12px", background:"#202020", border:"1px solid #2a2a2a", borderRadius:"4px", padding:"10px 12px", color:"#ffffff", width:"100%", outline:"none"}} />
           <p style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#4B5563", marginTop:"10px", lineHeight:1.5}}>
-            Used for AI name cleaning, priority scoring, and outreach message generation.
+            Used for AI name cleaning, opportunity scoring, and outreach message generation.
           </p>
         </div>
 

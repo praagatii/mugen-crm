@@ -137,9 +137,9 @@ export default function DashboardPage() {
   const total = leads.length
   const reached = leads.filter(l => l.reachedOut).length
   const pending = total - reached
-  const high = leads.filter(l => l.priority === 'HIGH').length
-  const medium = leads.filter(l => l.priority === 'MEDIUM').length
-  const low = leads.filter(l => l.priority === 'LOW').length
+  const hot = leads.filter(l => l.opportunityScore != null && l.opportunityScore >= 80).length
+  const potential = leads.filter(l => l.opportunityScore != null && l.opportunityScore >= 50 && l.opportunityScore < 80).length
+  const low = leads.filter(l => l.opportunityScore == null || l.opportunityScore < 50).length
   const withWebsite = leads.filter(l => l.website && l.website.trim()).length
 
   if (loading) {
@@ -177,13 +177,13 @@ export default function DashboardPage() {
           <span className="tile-value">{reached}</span>
         </div>
 
-        {/* TILE C — PENDING + HIGH */}
+        {/* TILE C — PENDING + HOT */}
         <div className="tile" style={{display:"flex", flexDirection:"column", background:"#7C89B0"}}>
           <span className="tile-label" style={{color:"#D9D8D0"}}>PENDING</span>
           <span className="tile-value" style={{marginBottom:"20px", marginTop:"0"}}>{pending}</span>
           <div style={{marginTop:"auto", paddingTop:"16px", borderTop:"2px solid rgba(255,255,255,0.2)"}}>
-            <span className="tile-label" style={{fontSize:"9px", color:"#D9D8D0"}}>HIGH PRIORITY</span>
-            <span className="tile-value-sm" style={{marginTop:"4px"}}>{high}</span>
+            <span className="tile-label" style={{fontSize:"9px", color:"#D9D8D0"}}>HOT LEADS 🔥</span>
+            <span className="tile-value-sm" style={{marginTop:"4px"}}>{hot}</span>
           </div>
         </div>
 
@@ -199,12 +199,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* TILE E — PRIORITY */}
+        {/* TILE E — OPPORTUNITY */}
         <div className="tile">
-          <span className="tile-label">PRIORITY</span>
+          <span className="tile-label">OPPORTUNITY</span>
           <BarChart bars={[
-            { label: 'High', value: high },
-            { label: 'Med', value: medium },
+            { label: 'Hot', value: hot },
+            { label: 'Potential', value: potential },
             { label: 'Low', value: low },
           ]} />
         </div>
@@ -242,7 +242,7 @@ export default function DashboardPage() {
               <div style={{display:"grid", gridTemplateColumns:"2fr 1.5fr 0.8fr 0.8fr", gap:"8px", padding:"8px 0", borderBottom:"1px solid #c8c7bf"}}>
                 <span className="tile-sub" style={{fontSize:"9px", color:"#111111"}}>NAME</span>
                 <span className="tile-sub" style={{fontSize:"9px", color:"#111111"}}>CONTACT</span>
-                <span className="tile-sub" style={{fontSize:"9px", color:"#111111", textAlign:"center"}}>PRIORITY</span>
+                <span className="tile-sub" style={{fontSize:"9px", color:"#111111", textAlign:"center"}}>SCORE</span>
                 <span className="tile-sub" style={{fontSize:"9px", color:"#111111", textAlign:"right"}}>STATUS</span>
               </div>
               {/* Rows */}
@@ -261,7 +261,9 @@ export default function DashboardPage() {
                     {lead.phone || lead.email || '—'}
                   </span>
                   <span style={{textAlign:"center"}}>
-                    {lead.priority && <span className={`priority-badge ${lead.priority.toLowerCase()}`} style={{minWidth:"56px", textAlign:"center"}}>{lead.priority}</span>}
+                    {lead.opportunityScore != null && <span className={`priority-badge ${lead.opportunityScore >= 80 ? 'hot' : lead.opportunityScore >= 50 ? 'potential' : 'low'}`} style={{minWidth:"56px", textAlign:"center"}}>
+                      {lead.opportunityScore} {lead.opportunityScore >= 80 ? '🔥' : lead.opportunityScore >= 50 ? '✨' : ''}
+                    </span>}
                   </span>
                   <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", textAlign:"right", color: lead.reachedOut ? "#111111" : "#4B5563"}}>
                     {lead.reachedOut ? 'REACHED' : 'PENDING'}
@@ -272,17 +274,17 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* TILE H+I — PRIORITY BREAKDOWN (stacked in col 3) */}
+        {/* TILE H+I — OPPORTUNITY BREAKDOWN (stacked in col 3) */}
         <div className="tile" style={{display:"flex", flexDirection:"column"}}>
-          <span className="tile-label">PRIORITY BREAKDOWN</span>
+          <span className="tile-label">OPPORTUNITY BREAKDOWN</span>
           <div style={{marginTop:"16px", display:"flex", flexDirection:"column", gap:"12px"}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-              <span className="tile-sub" style={{margin:0}}>HIGH</span>
-              <span className="tile-value-sm" style={{color:"#7C89B0"}}>{high}</span>
+              <span className="tile-sub" style={{margin:0}}>HOT 🔥</span>
+              <span className="tile-value-sm" style={{color:"#7C89B0"}}>{hot}</span>
             </div>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #202020", paddingTop:"12px"}}>
-              <span className="tile-sub" style={{margin:0}}>MEDIUM</span>
-              <span className="tile-value-sm">{medium}</span>
+              <span className="tile-sub" style={{margin:0}}>POTENTIAL ✨</span>
+              <span className="tile-value-sm">{potential}</span>
             </div>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", borderTop:"1px solid #202020", paddingTop:"12px"}}>
               <span className="tile-sub" style={{margin:0}}>LOW</span>

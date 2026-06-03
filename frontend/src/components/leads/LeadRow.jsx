@@ -28,8 +28,10 @@ export default function LeadRow({ lead, index, selected, onToggleSelect, onToggl
         />
       </td>
       <td className="py-3 px-4">
-        {lead.priority ? (
-          <span className={`badge badge-${lead.priority.toLowerCase()}`}>{lead.priority}</span>
+        {lead.opportunityScore != null ? (
+          <span className={`badge badge-${lead.opportunityScore >= 80 ? 'hot' : lead.opportunityScore >= 50 ? 'potential' : 'low'}`}>
+            {lead.opportunityScore} {lead.opportunityScore >= 80 ? '🔥' : lead.opportunityScore >= 50 ? '✨' : ''}
+          </span>
         ) : (
           <span className="text-xs text-muted">—</span>
         )}

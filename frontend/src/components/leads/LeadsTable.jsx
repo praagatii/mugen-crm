@@ -16,10 +16,9 @@ export default function LeadsTable({ leads, priorityFilter, onPriorityFilterChan
   }
 
   const sorted = [...leads].sort((a, b) => {
-    const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 }
     let cmp = 0
     if (sortField === 'priority') {
-      cmp = (priorityOrder[a.priority] ?? 3) - (priorityOrder[b.priority] ?? 3)
+      cmp = (b.opportunityScore ?? 0) - (a.opportunityScore ?? 0)
     } else if (sortField === 'name') {
       cmp = (a.name || '').localeCompare(b.name || '')
     } else if (sortField === 'rating') {
@@ -32,7 +31,12 @@ export default function LeadsTable({ leads, priorityFilter, onPriorityFilterChan
 
   const filtered = priorityFilter === 'all'
     ? sorted
-    : sorted.filter(l => l.priority === priorityFilter)
+    : sorted.filter(l => {
+        if (priorityFilter === 'HOT') return l.opportunityScore >= 80
+        if (priorityFilter === 'POTENTIAL') return l.opportunityScore >= 50 && l.opportunityScore < 80
+        if (priorityFilter === 'LOW') return l.opportunityScore < 50 || l.opportunityScore == null
+        return true
+      })
 
   const SortHeader = ({ field, label, className = '' }) => (
     <th
@@ -55,13 +59,13 @@ export default function LeadsTable({ leads, priorityFilter, onPriorityFilterChan
           <span className="text-sm text-muted">{leads.length} leads</span>
           <span className="w-px h-4 bg-hairline" />
           <div className="filter-group">
-            {['all', 'HIGH', 'MEDIUM', 'LOW'].map(p => (
+            {['all', 'HOT', 'POTENTIAL', 'LOW'].map(p => (
               <button
                 key={p}
                 onClick={() => onPriorityFilterChange(p)}
                 className={`filter-pill text-xs px-3 py-1.5 ${priorityFilter === p ? 'active' : ''}`}
               >
-                {p === 'all' ? 'All' : p}
+                {p === 'all' ? 'All' : p === 'HOT' ? '🔥 Hot' : p === 'POTENTIAL' ? '✨ Potential' : 'Low'}
               </button>
             ))}
           </div>

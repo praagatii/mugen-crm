@@ -129,7 +129,7 @@ export default function UploadPage() {
               </li>
               <li style={{display:"flex", gap:"12px", fontFamily:"IBM Plex Mono,monospace", fontSize:"11px", color:"#6B7280", lineHeight:1.5}}>
                 <span style={{color:"#7C89B0", fontFamily:"IBM Plex Mono,monospace", flexShrink:0}}>04</span>
-                Use AI tools to clean names, score priorities, and generate outreach
+                Use AI tools to clean names, score opportunities, and generate outreach
               </li>
             </ul>
           </div>

@@ -21,6 +21,7 @@ public class Lead {
     private Integer reviewCount;
     private boolean reachedOut = false;
     private String priority;
+    private Integer opportunityScore;
 
     @Column(columnDefinition = "TEXT")
     private String notes;
@@ -62,6 +63,8 @@ public class Lead {
     public void setReachedOut(boolean reachedOut) { this.reachedOut = reachedOut; }
     public String getPriority() { return priority; }
     public void setPriority(String priority) { this.priority = priority; }
+    public Integer getOpportunityScore() { return opportunityScore; }
+    public void setOpportunityScore(Integer opportunityScore) { this.opportunityScore = opportunityScore; }
     public String getNotes() { return notes; }
     public void setNotes(String notes) { this.notes = notes; }
     public LocalDateTime getCreatedAt() { return createdAt; }
