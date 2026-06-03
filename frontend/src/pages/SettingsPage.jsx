@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react'
 
+const LS_KEY = 'mugen_crm_api_key'
+
+function loadKey() {
+  return localStorage.getItem(LS_KEY) || ''
+}
+
+function saveKeyLocally(key) {
+  if (key) localStorage.setItem(LS_KEY, key)
+  else localStorage.removeItem(LS_KEY)
+}
+
 export default function SettingsPage() {
   const [apiKey, setApiKey] = useState('')
   const [saved, setSaved] = useState(false)
@@ -9,7 +20,18 @@ export default function SettingsPage() {
   const show = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000) }
 
   useEffect(() => {
-    fetch('/api/settings').then(r => r.json()).then(d => setHasKey(!!d.nvidiaApiKey)).catch(() => {})
+    fetch('/api/settings', { signal: AbortSignal.timeout(3000) })
+      .then(r => r.json())
+      .then(d => {
+        if (d.nvidiaApiKey) {
+          setHasKey(true)
+          setApiKey(loadKey())
+        }
+      })
+      .catch(() => {
+        const local = loadKey()
+        if (local) setHasKey(true)
+      })
   }, [])
 
   const handleSave = async () => {
@@ -18,10 +40,16 @@ export default function SettingsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ nvidiaApiKey: apiKey }),
+        signal: AbortSignal.timeout(5000),
       })
+      saveKeyLocally(apiKey)
       setSaved(true); setHasKey(true); show('SETTINGS SAVED')
       setTimeout(() => setSaved(false), 2000)
-    } catch { show('FAILED TO SAVE', 'error') }
+    } catch {
+      saveKeyLocally(apiKey)
+      setSaved(true); setHasKey(true); show('SAVED LOCALLY')
+      setTimeout(() => setSaved(false), 2000)
+    }
   }
 
   return (
