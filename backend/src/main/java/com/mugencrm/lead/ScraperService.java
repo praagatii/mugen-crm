@@ -74,7 +74,7 @@ public class ScraperService {
         return browser;
     }
 
-    public List<Map<String, Object>> scrapeGmaps(String query) {
+    public List<Map<String, Object>> scrapeGmaps(String query, int maxResults) {
         BrowserContext context = null;
         Page page = null;
         try {
@@ -91,7 +91,8 @@ public class ScraperService {
                 page.waitForSelector("div[role='feed']", new Page.WaitForSelectorOptions().setTimeout(15000));
             } catch (Exception ignored) {}
 
-            for (int scroll = 0; scroll < 10; scroll++) {
+            int scrolls = Math.min(maxResults / 3 + 2, 12);
+            for (int scroll = 0; scroll < scrolls; scroll++) {
                 page.evaluate("document.querySelector('div[role=\\'feed\\']')?.scrollBy(0, 5000)");
                 page.waitForTimeout(600);
             }
@@ -102,7 +103,7 @@ public class ScraperService {
 
             Set<String> seenHrefs = new HashSet<>();
             List<String> listingHrefs = new ArrayList<>();
-            int limit = Math.min(cards.size(), 30);
+            int limit = Math.min(cards.size(), Math.max(maxResults, 1));
             for (int i = 0; i < limit; i++) {
                 try {
                     String href = cards.get(i).getAttribute("href");

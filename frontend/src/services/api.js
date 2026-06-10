@@ -57,11 +57,11 @@ export async function generateMessages(ids) {
   return res.json()
 }
 
-export async function scrapeGmaps(query) {
+export async function scrapeGmaps(query, maxResults = 20) {
   const res = await fetch(`${API}/scrape`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
+    body: JSON.stringify({ query, maxResults }),
   })
   if (!res.ok) throw new Error('Scrape failed')
   return res.json()

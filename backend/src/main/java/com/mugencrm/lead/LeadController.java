@@ -78,13 +78,16 @@ public class LeadController {
     }
 
     @PostMapping("/scrape")
-    public ResponseEntity<Map<String, Object>> scrape(@RequestBody Map<String, String> body) {
+    public ResponseEntity<Map<String, Object>> scrape(@RequestBody Map<String, Object> body) {
         try {
-            String query = body.get("query");
+            String query = (String) body.get("query");
             if (query == null || query.isBlank()) {
                 return ResponseEntity.badRequest().body(Map.of("error", "query is required"));
             }
-            List<Map<String, Object>> results = scraperService.scrapeGmaps(query);
+            int maxResults = 20;
+            Object mr = body.get("maxResults");
+            if (mr instanceof Number) maxResults = ((Number) mr).intValue();
+            List<Map<String, Object>> results = scraperService.scrapeGmaps(query, maxResults);
             return ResponseEntity.ok(Map.of("results", results));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
