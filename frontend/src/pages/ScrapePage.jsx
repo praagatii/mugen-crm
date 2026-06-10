@@ -5,6 +5,7 @@ import { scrapeGmaps, importLeads } from '../services/api.js'
 export default function ScrapePage() {
   const [keyword, setKeyword] = useState('')
   const [location, setLocation] = useState('')
+  const [maxResults, setMaxResults] = useState(20)
   const [scraping, setScraping] = useState(false)
   const [results, setResults] = useState([])
   const [selected, setSelected] = useState(new Set())
@@ -16,7 +17,7 @@ export default function ScrapePage() {
     if (!keyword.trim() || !location.trim()) return
     setScraping(true); setResults([]); setSelected(new Set()); setImportCount(null); setError('')
     try {
-      const data = await scrapeGmaps(`${keyword} near ${location}`)
+      const data = await scrapeGmaps(`${keyword} near ${location}`, maxResults)
       setResults(data.results || [])
       if (!data.results || data.results.length === 0) setError('No results found')
     } catch (err) {
@@ -75,6 +76,12 @@ export default function ScrapePage() {
               </span>
             ) : 'SCRAPE'}
           </button>
+        </div>
+        <div style={{display:"flex", alignItems:"center", gap:"12px", marginTop:"16px", paddingTop:"16px", borderTop:"1px solid #202020"}}>
+          <label style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.08em", whiteSpace:"nowrap"}}>Results</label>
+          <input type="range" min="5" max="50" value={maxResults} onChange={e => setMaxResults(Number(e.target.value))}
+            style={{flex:1, accentColor:"#7C89B0", height:"4px", cursor:"pointer"}} />
+          <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"11px", color:"#ffffff", minWidth:"24px", textAlign:"right"}}>{maxResults}</span>
         </div>
       </div>
 

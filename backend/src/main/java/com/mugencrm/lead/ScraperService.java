@@ -74,7 +74,7 @@ public class ScraperService {
         return browser;
     }
 
-    public List<Map<String, Object>> scrapeGmaps(String query) {
+    public List<Map<String, Object>> scrapeGmaps(String query, int maxResults) {
         BrowserContext context = null;
         Page page = null;
         try {
@@ -91,7 +91,8 @@ public class ScraperService {
                 page.waitForSelector("div[role='feed']", new Page.WaitForSelectorOptions().setTimeout(15000));
             } catch (Exception ignored) {}
 
-            for (int scroll = 0; scroll < 10; scroll++) {
+            int scrolls = Math.min(maxResults / 3 + 2, 12);
+            for (int scroll = 0; scroll < scrolls; scroll++) {
                 page.evaluate("document.querySelector('div[role=\\'feed\\']')?.scrollBy(0, 5000)");
                 page.waitForTimeout(600);
             }
@@ -102,13 +103,16 @@ public class ScraperService {
 
             Set<String> seenHrefs = new HashSet<>();
             List<String> listingHrefs = new ArrayList<>();
-            int limit = Math.min(cards.size(), 30);
+            Map<String, String> cardNames = new HashMap<>();
+            int limit = Math.min(cards.size(), Math.max(maxResults, 1));
             for (int i = 0; i < limit; i++) {
                 try {
                     String href = cards.get(i).getAttribute("href");
                     if (href != null && !href.isBlank() && !seenHrefs.contains(href)) {
                         seenHrefs.add(href);
                         listingHrefs.add(href);
+                        String cn = cards.get(i).textContent().trim();
+                        if (!cn.isBlank()) cardNames.put(href, cn.lines().findFirst().orElse("").trim());
                     }
                 } catch (Exception ignored) {}
             }
@@ -116,11 +120,12 @@ public class ScraperService {
             System.out.println("[SCRAPER] Fetching " + listingHrefs.size() + " listing pages");
 
             BrowserContext finalContext = context;
+            Map<String, String> finalCardNames = cardNames;
             ExecutorService executor = Executors.newFixedThreadPool(4);
             List<Future<Map<String, Object>>> futures = new ArrayList<>();
             for (int i = 0; i < listingHrefs.size(); i++) {
                 String href = listingHrefs.get(i);
-                futures.add(executor.submit(() -> fetchListingDetails(finalContext, href)));
+                futures.add(executor.submit(() -> fetchListingDetails(finalContext, href, finalCardNames.get(href))));
                 if (i % 4 == 3) try { Thread.sleep(800); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
             }
             executor.shutdown();
@@ -148,7 +153,7 @@ public class ScraperService {
         }
     }
 
-    private Map<String, Object> fetchListingDetails(BrowserContext context, String href) {
+    private Map<String, Object> fetchListingDetails(BrowserContext context, String href, String cardName) {
         Page listingPage = null;
         try {
             listingPage = context.newPage();
@@ -161,9 +166,8 @@ public class ScraperService {
             Document doc = Jsoup.parse(html);
 
             String name = extractName(doc);
-            if (name.isBlank()) {
-                name = extractNameFromUrl(href);
-            }
+            if (name.isBlank()) name = extractNameFromUrl(href);
+            if (name.isBlank() && cardName != null) name = cardName;
 
             String phone = extractPhone(doc);
             String website = extractWebsite(doc);
