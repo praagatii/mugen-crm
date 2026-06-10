@@ -11,12 +11,14 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class AiService {
 
     private static final String API_URL = "https://openrouter.ai/api/v1/chat/completions";
-    private static final String MODEL = "meta-llama/llama-3.1-8b-instruct";
+    private static final String MODEL = "openai/gpt-4o-mini";
 
     private final SettingsHolder settings;
     private final HttpClient client;
@@ -28,18 +30,117 @@ public class AiService {
         this.mapper = new ObjectMapper();
     }
 
-    public String tidyBusinessName(String rawName) {
-        if (rawName == null || rawName.isBlank()) return rawName;
-        String[] words = rawName.trim().split("\\s+");
-        if (words.length <= 4) return rawName.trim();
+    public Map<String, String> batchTidyNames(List<String> names) {
+        Map<String, String> results = new java.util.LinkedHashMap<>();
+        if (names.isEmpty()) return results;
 
-        String apiKey = settings.getNvidiaApiKey();
-        if (apiKey == null || apiKey.isBlank()) return rawName.trim();
+        StringBuilder sb = new StringBuilder();
+        sb.append("Extract ONLY the core business brand name from each listing. Remove location suffixes, SEO keywords, promotional text, and practice descriptors (Clinic, Hospital, Centre, Academy, etc.).\n\n");
+        sb.append("Return ONLY a valid JSON array of objects with fields \"original\" and \"cleaned\". No markdown, no code fences, no explanation.\n\n");
+        for (int i = 0; i < names.size(); i++) {
+            sb.append("{\"original\": \"").append(escapeJson(names.get(i))).append("\"");
+            sb.append(", \"cleaned\": \"<cleaned name>\"").append("}");
+            if (i < names.size() - 1) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append("\n\nExamples:\nSPARSH Hospital, RR Nagar → SPARSH\nVeturi Polyclinic & Diagnostic Centre → Veturi\nRxDx Clinics, Rajarajeshwari Nagar → RxDx\nWHITE PETALS PRE-SCHOOL - RR Nagar → WHITE PETALS");
 
-        String prompt = "Extract ONLY the core business brand name from this listing. Remove ALL of the following: location suffixes, SEO keywords, descriptions, promotional text, practice descriptors (Clinic, Hospital, Polyclinic, Diagnostics, Centre, Center, Preschool, Daycare, Play School, Academy, Institute, Services, Solutions, Care, Pharmacy, Laboratory, Nursing Home, Medical Centre, Speciality, Super Speciality, Orthopaedics, Neurology, Cardiology, Dental, Skin, ENT, Eye, Maternity, Child, Cancer, Diabetes, Heart, Sports Medicine, Nephrology, Liver, Gastro, Gen Medicine, Physician, Surgeon, Gynecologist, Paediatric, Dermatologist, Orthopaedic, etc.). Return ONLY the distinctive establishment brand name, nothing else. Do NOT use quotes.\n\nExamples:\n\"Veturi Polyclinic & Diagnostic Centre\" → Veturi\n\"SPARSH Hospital, RR Nagar\" → SPARSH\n\"RxDx Clinics, Rajarajeshwari (RR) Nagar\" → RxDx\n\"Shree Tibbadevi Clinic\" → Shree Tibbadevi\n\"WHITE PETALS PRE-SCHOOL - RR Nagar\" → WHITE PETALS\n\"The Child's Kingdom Preschool & Daycare, Rajarajeshwari Nagar, Bengaluru | Best Preschool In Rajarajeshwari Nagar\" → The Child's Kingdom\n\nInput: \"" + rawName + "\"\nOutput:";
+        try {
+            String raw = callAi(sb.toString(), 4000);
+            if (raw.isEmpty()) return results;
 
-        String result = callAI(prompt);
-        return result.replace("\"", "").replace("'", "").trim();
+            raw = raw.trim();
+            if (raw.startsWith("```")) {
+                raw = raw.replaceAll("(?s)```(?:json)?\\s*", "").trim();
+            }
+            int start = raw.indexOf('[');
+            int end = raw.lastIndexOf(']');
+            if (start != -1 && end > start) {
+                raw = raw.substring(start, end + 1);
+            }
+
+            JsonNode arr = mapper.readTree(raw);
+            if (arr.isArray()) {
+                for (JsonNode node : arr) {
+                    String orig = node.path("original").asText("");
+                    String cleaned = node.path("cleaned").asText("");
+                    if (!orig.isEmpty()) results.put(orig, cleaned);
+                }
+            }
+        } catch (Exception ignored) {}
+
+        for (String name : names) {
+            results.putIfAbsent(name, name);
+        }
+        return results;
+    }
+
+    public Map<String, String> batchScorePriority(List<Map<String, Object>> leadsData) {
+        Map<String, String> results = new java.util.LinkedHashMap<>();
+        if (leadsData.isEmpty()) return results;
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Analyze each business and determine how likely they need professional web design services.\n\n");
+        sb.append("For each business, reply with HIGH, MEDIUM, or LOW based on:\n");
+        sb.append("- No website or basic URL (facebook, blogspot) → HIGH\n");
+        sb.append("- Local independent business with basic website → MEDIUM\n");
+        sb.append("- Well-established brand with professional custom website → LOW\n");
+        sb.append("- Large franchise/chain with strong online presence → LOW\n\n");
+        sb.append("Return ONLY a valid JSON array of objects with fields \"index\" (number), \"name\", and \"priority\" (one of HIGH, MEDIUM, LOW). No markdown, no code fences, no explanation.\n\n");
+
+        for (int i = 0; i < leadsData.size(); i++) {
+            Map<String, Object> lead = leadsData.get(i);
+            String name = (String) lead.getOrDefault("name", "");
+            String website = (String) lead.getOrDefault("website", "");
+            Object ratingObj = lead.get("rating");
+            Object reviewsObj = lead.get("reviewCount");
+            String ratingStr = ratingObj != null ? String.format("%.1f", ratingObj) : "N/A";
+            String reviewsStr = reviewsObj != null ? reviewsObj.toString() : "N/A";
+            String siteInfo = (website == null || website.isBlank()) ? "No website" : website;
+
+            sb.append("--- Business ").append(i).append(" ---\n");
+            sb.append("Name: ").append(name).append("\n");
+            sb.append("Website: ").append(siteInfo).append("\n");
+            sb.append("Rating: ").append(ratingStr).append("/5\n");
+            sb.append("Reviews: ").append(reviewsStr).append("\n\n");
+        }
+
+        sb.append("JSON output:\n");
+
+        try {
+            String raw = callAi(sb.toString(), 4000);
+            if (raw.isEmpty()) return results;
+
+            raw = raw.trim();
+            if (raw.startsWith("```")) {
+                raw = raw.replaceAll("(?s)```(?:json)?\\s*", "").trim();
+            }
+            int start = raw.indexOf('[');
+            int end = raw.lastIndexOf(']');
+            if (start != -1 && end > start) {
+                raw = raw.substring(start, end + 1);
+            }
+
+            JsonNode arr = mapper.readTree(raw);
+            if (arr.isArray()) {
+                for (JsonNode node : arr) {
+                    String name = node.path("name").asText("");
+                    String priority = node.path("priority").asText("").toUpperCase();
+                    if (!name.isEmpty()) {
+                        if (priority.contains("HIGH")) priority = "HIGH";
+                        else if (priority.contains("LOW")) priority = "LOW";
+                        else priority = "MEDIUM";
+                        results.put(name, priority);
+                    }
+                }
+            }
+        } catch (Exception ignored) {}
+
+        for (Map<String, Object> lead : leadsData) {
+            String name = (String) lead.getOrDefault("name", "");
+            if (!name.isEmpty()) results.putIfAbsent(name, "MEDIUM");
+        }
+        return results;
     }
 
     public String generateOutreachMessage(String businessName, boolean hasWebsite) {
@@ -51,51 +152,24 @@ public class AiService {
             + "\u2014 Mugen\n\u221E\nhttps://studio-mugen.com/";
     }
 
-    public Integer scoreOpportunity(String name, String website, Double rating, Integer reviewCount) {
-        String apiKey = settings.getNvidiaApiKey();
-        if (apiKey == null || apiKey.isBlank()) return 50;
-
-        String ratingStr = rating != null ? String.format("%.1f", rating) : "N/A";
-        String reviewsStr = reviewCount != null ? reviewCount.toString() : "N/A";
-        String siteInfo = (website == null || website.isBlank()) ? "No website" : website;
-
-        String prompt = "You are a sales prioritization assistant for Mugen Studio, a web design agency. "
-            + "Score this business from 0 to 100 on how badly they need a website and how likely they are to become a Mugen client.\n\n"
-            + "Business: " + name + "\n"
-            + "Website: " + siteInfo + "\n"
-            + "Rating: " + ratingStr + "/5\n"
-            + "Reviews: " + reviewsStr + "\n\n"
-            + "INCREASE score (+15-30) for:\n"
-            + "- No website found\n"
-            + "- Website link missing (only social media presence)\n"
-            + "- Good offline reputation but weak digital presence\n"
-            + "- High reviews / customer interest but poor online conversion\n"
-            + "- Strong visual businesses where websites matter: cafes, salons, restaurants, clinics, gyms, boutiques, creators, studios, service businesses\n\n"
-            + "DECREASE score (-15-30) for:\n"
-            + "- Already has a professional website\n"
-            + "- Strong SEO and complete digital presence\n"
-            + "- Already polished online experience\n\n"
-            + "IMPORTANT: Reply ONLY with a single number between 0 and 100. No words, no explanation, no punctuation.";
-
-        String result = callAI(prompt).trim();
-        try {
-            int score = Integer.parseInt(result.replaceAll("[^0-9]", ""));
-            return Math.max(0, Math.min(100, score));
-        } catch (NumberFormatException e) {
-            System.err.println("[AiService] Could not parse score from: " + result);
-            return 50;
-        }
+    public String tidyBusinessName(String rawName) {
+        Map<String, String> result = batchTidyNames(List.of(rawName));
+        return result.getOrDefault(rawName, rawName);
     }
 
-    private String callAI(String prompt) {
+    private String escapeJson(String s) {
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
+    }
+
+    public String callAi(String prompt, int maxTokens) {
         try {
-            String apiKey = settings.getNvidiaApiKey();
+            String apiKey = settings.getApiKey();
             if (apiKey == null || apiKey.isBlank()) return "";
 
             ObjectNode body = mapper.createObjectNode();
             body.put("model", MODEL);
             body.put("temperature", 0.3);
-            body.put("max_tokens", 500);
+            body.put("max_tokens", maxTokens);
 
             ArrayNode messages = body.putArray("messages");
             ObjectNode userMsg = messages.addObject();
@@ -108,8 +182,8 @@ public class AiService {
                 .uri(URI.create(API_URL))
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
-                .header("HTTP-Referer", "http://localhost:3000")
-                .header("X-Title", "Mugen CRM")
+                .header("HTTP-Referer", "https://mugencrm.com")
+                .header("X-Title", "MugenCRM")
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
 
