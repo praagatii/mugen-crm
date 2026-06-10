@@ -91,12 +91,6 @@ public class LeadController {
         }
     }
 
-    @DeleteMapping
-    public ResponseEntity<Map<String, Object>> deleteAll() {
-        service.deleteAll();
-        return ResponseEntity.ok(Map.of("deleted", true));
-    }
-
     @PostMapping("/import")
     public ResponseEntity<Map<String, Object>> importLeads(@RequestBody Map<String, List<Map<String, Object>>> body) {
         try {
