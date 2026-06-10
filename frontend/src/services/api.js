@@ -38,7 +38,7 @@ export async function updateNotes(id, notes) {
 export async function tidyLeads() {
   const res = await fetch(`${API}/tidy`, { method: 'POST' })
   if (!res.ok) throw new Error('Tidy failed')
-  return res.json()
+  return res.json() // { cleaned: N, details: [...] }
 }
 
 export async function scoreLeads() {
@@ -64,6 +64,18 @@ export async function scrapeGmaps(query) {
     body: JSON.stringify({ query }),
   })
   if (!res.ok) throw new Error('Scrape failed')
+  return res.json()
+}
+
+export async function deleteLead(id) {
+  const res = await fetch(`${API}/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Delete failed')
+  return res.json()
+}
+
+export async function deleteAllLeads() {
+  const res = await fetch(`${API}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Delete all failed')
   return res.json()
 }
 

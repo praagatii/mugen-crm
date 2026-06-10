@@ -59,8 +59,8 @@ public class LeadController {
     @PostMapping("/tidy")
     public ResponseEntity<Map<String, Object>> tidyLeads() {
         try {
-            List<Lead> cleaned = service.tidyAllLeads();
-            return ResponseEntity.ok(Map.of("cleaned", cleaned.size()));
+            Map<String, Object> result = service.tidyAllLeads();
+            return ResponseEntity.ok(result);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -100,6 +100,26 @@ public class LeadController {
             }
             int count = service.importLeads(leads);
             return ResponseEntity.ok(Map.of("imported", count));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> deleteLead(@PathVariable Long id) {
+        try {
+            service.deleteLead(id);
+            return ResponseEntity.ok(Map.of("deleted", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping
+    public ResponseEntity<Map<String, Object>> deleteAllLeads() {
+        try {
+            int count = service.deleteAllLeads();
+            return ResponseEntity.ok(Map.of("deleted", count));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

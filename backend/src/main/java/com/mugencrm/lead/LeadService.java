@@ -78,14 +78,35 @@ public class LeadService {
         return repository.saveAll(leads).size();
     }
 
-    public List<Lead> tidyAllLeads() {
+    public Map<String, Object> tidyAllLeads() {
         List<Lead> leads = repository.findAll();
+        List<Map<String, Object>> details = new ArrayList<>();
+
+        List<String> namesToClean = new ArrayList<>();
+        for (Lead lead : leads) {
+            String rawName = lead.getName();
+            if (rawName != null && !rawName.isBlank() && rawName.trim().split("\\s+").length > 6) {
+                namesToClean.add(rawName);
+            }
+        }
+
+        Map<String, String> cleanedNames = new java.util.HashMap<>();
+        if (!namesToClean.isEmpty()) {
+            cleanedNames = aiService.batchTidyNames(namesToClean);
+        }
+
         for (Lead lead : leads) {
             String rawName = lead.getName();
             if (rawName == null || rawName.isBlank()) continue;
 
-            String phone = lead.getPhone();
-            String website = lead.getWebsite();
+            String oldPhone = lead.getPhone();
+            String oldWebsite = lead.getWebsite();
+            String phone = oldPhone;
+            String website = oldWebsite;
+
+            Map<String, Object> change = new java.util.LinkedHashMap<>();
+            change.put("id", lead.getId());
+            change.put("originalName", rawName);
 
             if (phone == null || phone.isBlank() || website == null || website.isBlank()) {
                 Map<String, String> info = searchBusinessInfo(rawName);
@@ -97,12 +118,26 @@ public class LeadService {
                 }
             }
 
-            String cleaned = aiService.tidyBusinessName(rawName);
+            String cleaned = cleanedNames.getOrDefault(rawName, rawName);
             lead.setName(cleaned);
             if (phone != null && !phone.isBlank()) lead.setPhone(phone);
             if (website != null && !website.isBlank()) lead.setWebsite(website);
+
+            boolean phoneFound = phone != null && !phone.isBlank() && (oldPhone == null || oldPhone.isBlank() || !phone.equals(oldPhone));
+            boolean websiteFound = website != null && !website.isBlank() && (oldWebsite == null || oldWebsite.isBlank() || !website.equals(oldWebsite));
+
+            change.put("cleanedName", cleaned);
+            change.put("phoneFound", phoneFound);
+            change.put("websiteFound", websiteFound);
+            change.put("newPhone", phone);
+            change.put("newWebsite", website);
+            details.add(change);
         }
-        return repository.saveAll(leads);
+        List<Lead> saved = repository.saveAll(leads);
+        Map<String, Object> result = new java.util.LinkedHashMap<>();
+        result.put("cleaned", saved.size());
+        result.put("details", details);
+        return result;
     }
 
     private Map<String, String> searchBusinessInfo(String query) {
@@ -139,10 +174,28 @@ public class LeadService {
 
     public List<Lead> scoreAllLeads() {
         List<Lead> leads = repository.findAll();
+
+        List<Map<String, Object>> batchData = new ArrayList<>();
         for (Lead lead : leads) {
-            String priority = aiService.scorePriority(lead.getName(), lead.getWebsite(), lead.getRating(), lead.getReviewCount());
+            Map<String, Object> entry = new java.util.LinkedHashMap<>();
+            entry.put("name", lead.getName());
+            entry.put("website", lead.getWebsite());
+            entry.put("rating", lead.getRating());
+            entry.put("reviewCount", lead.getReviewCount());
+            batchData.add(entry);
+        }
+
+        Map<String, String> priorities = new java.util.HashMap<>();
+        if (!batchData.isEmpty()) {
+            priorities = aiService.batchScorePriority(batchData);
+        }
+
+        for (Lead lead : leads) {
+            String name = lead.getName();
+            String priority = priorities.getOrDefault(name, "MEDIUM");
             lead.setPriority(priority);
         }
+
         return repository.saveAll(leads);
     }
 
@@ -156,6 +209,18 @@ public class LeadService {
             messages.put(id, msg);
         }
         return messages;
+    }
+
+    public Lead deleteLead(Long id) {
+        Lead lead = repository.findById(id).orElseThrow();
+        repository.delete(lead);
+        return lead;
+    }
+
+    public int deleteAllLeads() {
+        long count = repository.count();
+        repository.deleteAll();
+        return (int) count;
     }
 
     public int importLeads(List<Map<String, Object>> leadsData) {

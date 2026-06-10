@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getLeads, toggleStatus, updateNotes, tidyLeads, generateMessages, scoreLeads } from '../services/api.js'
+import { getLeads, toggleStatus, updateNotes, tidyLeads, generateMessages, scoreLeads, deleteLead, deleteAllLeads } from '../services/api.js'
 
 function cleanPhone(p) {
   if (!p) return ''
@@ -20,6 +20,7 @@ export default function LeadsPage() {
   const [selected, setSelected] = useState(new Set())
   const [messages, setMessages] = useState({})
   const [showQueue, setShowQueue] = useState(false)
+  const [tidyDetails, setTidyDetails] = useState(null)
   const [toast, setToast] = useState(null)
 
   const show = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000) }
@@ -63,6 +64,19 @@ export default function LeadsPage() {
     catch { show('FAILED TO GENERATE', 'error') }
   }
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('DELETE THIS LEAD?')) return
+    try { await deleteLead(id); setLeads(prev => prev.filter(l => l.id !== id)); setSelected(prev => { const n = new Set(prev); n.delete(id); return n }); show('LEAD DELETED') }
+    catch { show('FAILED TO DELETE', 'error') }
+  }
+
+  const handleDeleteAll = async () => {
+    if (leads.length === 0) return show('NO LEADS TO DELETE', 'error')
+    if (!window.confirm(`DELETE ALL ${leads.length} LEADS? THIS CANNOT BE UNDONE.`)) return
+    try { await deleteAllLeads(); setLeads([]); setSelected(new Set()); show('ALL LEADS DELETED') }
+    catch { show('FAILED TO DELETE ALL', 'error') }
+  }
+
   const sorted = [...leads].sort((a, b) => {
     const o = { HIGH: 0, MEDIUM: 1, LOW: 2 }
     return (o[a.priority] ?? 3) - (o[b.priority] ?? 3)
@@ -73,10 +87,14 @@ export default function LeadsPage() {
       <div style={{display:"flex", alignItems:"flex-end", justifyContent:"space-between", marginBottom:"24px"}}>
         <div className="section-title" style={{marginBottom:0}}>LEADS</div>
         <div style={{display:"flex", gap:"8px"}}>
-          <button onClick={async () => { await tidyLeads(); fetch(); show('NAMES CLEANED') }}
-            className="btn" style={{fontSize:"10px", padding:"6px 12px"}}>TIDY NAMES</button>
+          <button onClick={async () => {
+              try { const r = await tidyLeads(); fetch(); setTidyDetails(r); show('NAMES CLEANED') }
+              catch { show('TIDY FAILED', 'error') }
+            }} className="btn" style={{fontSize:"10px", padding:"6px 12px"}}>TIDY NAMES</button>
           <button onClick={async () => { await scoreLeads(); fetch(); show('LEADS SCORED') }}
             className="btn" style={{fontSize:"10px", padding:"6px 12px"}}>SCORE ALL</button>
+          <button onClick={handleDeleteAll}
+            className="btn" style={{fontSize:"10px", padding:"6px 12px", color:"#ef4444", borderColor:"#ef4444"}}>DELETE ALL</button>
         </div>
       </div>
 
@@ -133,6 +151,7 @@ export default function LeadsPage() {
               <th style={{padding:"12px 8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", fontWeight:500, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"left"}}>ADDRESS</th>
               <th style={{width:"90px", padding:"12px 8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", fontWeight:500, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"center"}}>STATUS</th>
               <th style={{width:"100px", padding:"12px 16px 12px 8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", fontWeight:500, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"left"}}>NOTES</th>
+              <th style={{width:"36px", padding:"12px 8px 12px 0", textAlign:"center"}}></th>
             </tr>
           </thead>
           <tbody>
@@ -196,11 +215,19 @@ export default function LeadsPage() {
                     {lead.notes ? lead.notes.substring(0, 18) + (lead.notes.length > 18 ? '…' : '') : '+ ADD NOTE'}
                   </button>
                 </td>
+                <td style={{padding:"10px 8px 10px 0", verticalAlign:"middle", textAlign:"center"}}>
+                  <button onClick={() => handleDelete(lead.id)} title="Delete lead"
+                    style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"11px", color:"#4B5563", background:"none", border:"none", cursor:"pointer", padding:"2px 4px", transition:"color 0.15s"}}
+                    onMouseEnter={e => e.currentTarget.style.color = "#ef4444"}
+                    onMouseLeave={e => e.currentTarget.style.color = "#4B5563"}>
+                    ✕
+                  </button>
+                </td>
               </tr>
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={8} style={{textAlign:"center", padding:"40px 0", fontFamily:"IBM Plex Mono,monospace", fontSize:"11px", color:"#4B5563"}}>
+                <td colSpan={9} style={{textAlign:"center", padding:"40px 0", fontFamily:"IBM Plex Mono,monospace", fontSize:"11px", color:"#4B5563"}}>
                   No leads found
                 </td>
               </tr>
@@ -269,6 +296,54 @@ export default function LeadsPage() {
             <div style={{display:"flex", justifyContent:"flex-end", gap:"8px", marginTop:"16px"}}>
               <button onClick={() => setNotePanel(null)} className="btn btn-secondary" style={{fontSize:"10px", padding:"8px 16px"}}>CANCEL</button>
               <button onClick={() => handleSaveNotes(notePanel.id)} className="btn" style={{fontSize:"10px", padding:"8px 16px", background:"#7C89B0", color:"#111111"}}>SAVE NOTES</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tidyDetails && (
+        <div style={{position:"fixed", inset:0, zIndex:50, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.5)", backdropFilter:"blur(4px)", padding:"16px"}}>
+          <div className="tile" style={{width:"100%", maxWidth:"900px", maxHeight:"85vh", display:"flex", flexDirection:"column", padding:0, overflow:"hidden"}}>
+            <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"20px 24px", borderBottom:"1px solid #202020"}}>
+              <div>
+                <span className="tile-label" style={{fontSize:"11px", marginBottom:"4px"}}>TIDY NAMES RESULTS</span>
+                <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#4B5563"}}>{tidyDetails.cleaned} leads processed</span>
+              </div>
+              <button onClick={() => setTidyDetails(null)} className="btn-icon" style={{fontSize:"14px", width:"28px", height:"28px", display:"flex", alignItems:"center", justifyContent:"center"}}>✕</button>
+            </div>
+            <div style={{flex:1, overflowY:"auto", padding:"20px 24px"}}>
+              <table style={{width:"100%", borderCollapse:"collapse"}}>
+                <thead>
+                  <tr style={{borderBottom:"1px solid #202020"}}>
+                    <th style={{padding:"8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", fontWeight:500, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"left"}}>ORIGINAL NAME</th>
+                    <th style={{padding:"8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", fontWeight:500, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"left"}}>CLEANED NAME</th>
+                    <th style={{width:"80px", padding:"8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", fontWeight:500, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"center"}}>PHONE</th>
+                    <th style={{width:"80px", padding:"8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", fontWeight:500, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"center"}}>WEBSITE</th>
+                    <th style={{padding:"8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", fontWeight:500, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"left"}}>NEW PHONE</th>
+                    <th style={{padding:"8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", fontWeight:500, color:"#6B7280", textTransform:"uppercase", letterSpacing:"0.08em", textAlign:"left"}}>NEW WEBSITE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tidyDetails.details?.map((d, i) => (
+                    <tr key={d.id} style={{borderBottom:"1px solid #202020"}}>
+                      <td style={{padding:"8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#9CA3AF"}}>{d.originalName}</td>
+                      <td style={{padding:"8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#ffffff"}}>{d.cleanedName}</td>
+                      <td style={{padding:"8px", textAlign:"center"}}>
+                        {d.phoneFound
+                          ? <span style={{fontSize:"10px", color:"#7C89B0"}}>✓</span>
+                          : <span style={{fontSize:"10px", color:"#4B5563"}}>—</span>}
+                      </td>
+                      <td style={{padding:"8px", textAlign:"center"}}>
+                        {d.websiteFound
+                          ? <span style={{fontSize:"10px", color:"#7C89B0"}}>✓</span>
+                          : <span style={{fontSize:"10px", color:"#4B5563"}}>—</span>}
+                      </td>
+                      <td style={{padding:"8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#6B7280", maxWidth:"140px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{d.newPhone || '—'}</td>
+                      <td style={{padding:"8px", fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#6B7280", maxWidth:"160px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{d.newWebsite || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
