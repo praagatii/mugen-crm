@@ -230,7 +230,6 @@ export default function LeadsPage() {
                 <div key={lead.id} style={{border:"1px solid #202020", borderRadius:"4px", padding:"16px"}}>
                   <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"12px"}}>
                     <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"12px", color:"#ffffff"}}>{lead.name}</span>
-                    {lead.website && <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", color:"#6B7280", background:"#202020", padding:"3px 8px", borderRadius:"3px"}}>HAS WEBSITE</span>}
                   </div>
                   <textarea className="input" value={messages[lead.id] || 'Generating...'} readOnly
                     style={{width:"100%", padding:"12px", fontSize:"11px", fontFamily:"IBM Plex Mono,monospace", minHeight:"100px", resize:"none", lineHeight:1.6}} />

@@ -43,11 +43,12 @@ public class AiService {
     }
 
     public String generateOutreachMessage(String businessName, boolean hasWebsite) {
-        return "Hey, I came across " + businessName + " and genuinely loved what you\u2019re building.\n\n"
-            + "I\u2019m Raghu from Mugen Studio \u2014 \u201cMugen\u201d means infinity , inspired by the idea of infinite possibilities and bringing unique stories to life.\n\n"
-            + "I felt like " + businessName + " has its own personality and story, and we\u2019d love to create a website that captures that \u2014 something that feels like you, not just another page online.\n\n"
-            + "Would love to share some ideas if you\u2019re open to it :)\n\n"
-            + "\u2014 Mugen \n\nhttps://studio-mugen.com/";
+        return "Hey, I came across " + businessName + " and genuinely loved what you're building.\n\n\n\n"
+            + "I'm Raghu from Mugen Studio, \"Mugen\" means infinity, built around the belief that every brand has limitless possibilities and a story worth bringing to life. \n\n\n\n"
+            + businessName + " already has a strong identity and vision behind it, and we had a few ideas on how that could be translated into a digital experience that feels more personal, memorable, and truly represents the brand.\n\n\n\n"
+            + "Would love to discuss those thoughts with you over a quick 2-minute call and explore what we could create together.\n\n\n\n"
+            + "Looking forward to connecting :)\n\n\n\n"
+            + "\u2014 Mugen\n\n\u221E\n\nhttps://studio-mugen.com/";
     }
 
     public Integer scoreOpportunity(String name, String website, Double rating, Integer reviewCount) {

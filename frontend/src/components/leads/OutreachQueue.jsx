@@ -16,11 +16,6 @@ export default function OutreachQueue({ leads, messages, onClose, onSend }) {
             <div key={lead.id} className="border border-hairline rounded-lg p-4 bg-soft-stone/30">
               <div className="flex items-center justify-between mb-3">
                 <span className="font-medium text-sm text-ink">{lead.name}</span>
-                {lead.website && (
-                  <span className="text-xs text-muted bg-canvas border border-hairline px-3 py-0.5 rounded-full">
-                    Has website
-                  </span>
-                )}
               </div>
               <textarea
                 className="w-full bg-canvas border border-hairline rounded-lg p-3 text-sm text-ink resize-none h-32 focus:outline-none focus:border-primary"
