@@ -44,7 +44,7 @@ export default function LeadRow({ lead, index, selected, onToggleSelect, onToggl
           <button
             onClick={() => {
               const cleaned = cleanPhone(lead.phone)
-              window.open(`https://wa.me/${cleaned}`, '_blank')
+              window.open(`https://web.whatsapp.com/send?phone=${cleaned}`, '_blank')
             }}
             className="text-muted hover:text-primary transition-colors underline underline-offset-2"
           >

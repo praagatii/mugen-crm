@@ -54,7 +54,7 @@ export default function LeadsPage() {
       const l = leads.find(x => x.id === id)
       if (l?.phone) {
         const text = encodeURIComponent(messages[id] || '')
-        window.open(`https://wa.me/${cleanPhone(l.phone)}?text=${text}`, '_blank')
+        window.open(`https://web.whatsapp.com/send?phone=${cleanPhone(l.phone)}&text=${text}`, '_blank')
       }
     })
     setShowQueue(false); setSelected(new Set())
@@ -163,7 +163,7 @@ export default function LeadsPage() {
                 </td>
                 <td style={{padding:"10px 8px", verticalAlign:"middle", maxWidth:"140px", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>
                   {lead.phone ? (
-                    <button onClick={() => window.open(`https://wa.me/${cleanPhone(lead.phone)}`, '_blank')}
+                    <button onClick={() => window.open(`https://web.whatsapp.com/send?phone=${cleanPhone(lead.phone)}`, '_blank')}
                       style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#6B7280", textDecoration:"underline", textUnderlineOffset:"2px", background:"none", border:"none", cursor:"pointer", padding:0, textAlign:"left"}}>
                       {lead.phone}
                     </button>
