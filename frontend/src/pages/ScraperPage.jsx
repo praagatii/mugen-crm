@@ -8,6 +8,7 @@ export default function ScraperPage() {
   const [selected, setSelected] = useState(new Set())
   const [importing, setImporting] = useState(false)
   const [toast, setToast] = useState(null)
+  const [activeTab, setActiveTab] = useState('basic')
 
   const show = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast(null), 3000) }
 
@@ -17,7 +18,7 @@ export default function ScraperPage() {
     setResults(null)
     setSelected(new Set())
     try {
-      const data = await scrapeGmaps({ query: query.trim() })
+      const data = await scrapeGmaps(query.trim())
       setResults(data.results || data)
     } catch (err) {
       show(err.message || 'Scrape failed', 'error')
@@ -46,6 +47,12 @@ export default function ScraperPage() {
     if (selected.size === results.length) setSelected(new Set())
     else setSelected(new Set(results.map((_, i) => i)))
   }
+
+  const cell = (v, fallback = '—') => (
+    <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color: v ? "#ffffff" : "#6B7280", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"block"}}>
+      {v || fallback}
+    </span>
+  )
 
   return (
     <div className="page-container">
@@ -85,54 +92,109 @@ export default function ScraperPage() {
                 </div>
               )}
 
+              <div style={{borderBottom:"1px solid #202020", display:"flex"}}>
+                <button onClick={() => setActiveTab('basic')}
+                  style={{flex:1, padding:"10px", fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", textTransform:"uppercase", letterSpacing:"0.08em", border:"none", background: activeTab==='basic' ? "#1a1a1a" : "transparent", color: activeTab==='basic' ? "#ffffff" : "#6B7280", cursor:"pointer"}}>
+                  BASIC
+                </button>
+                <button onClick={() => setActiveTab('details')}
+                  style={{flex:1, padding:"10px", fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", textTransform:"uppercase", letterSpacing:"0.08em", border:"none", background: activeTab==='details' ? "#1a1a1a" : "transparent", color: activeTab==='details' ? "#ffffff" : "#6B7280", cursor:"pointer"}}>
+                  DETAILS
+                </button>
+                <button onClick={() => setActiveTab('reviews')}
+                  style={{flex:1, padding:"10px", fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", textTransform:"uppercase", letterSpacing:"0.08em", border:"none", background: activeTab==='reviews' ? "#1a1a1a" : "transparent", color: activeTab==='reviews' ? "#ffffff" : "#6B7280", cursor:"pointer"}}>
+                  REVIEWS
+                </button>
+              </div>
+
               <div style={{overflowX:"auto"}}>
-                <div style={{
-                  display:"grid",
-                  gridTemplateColumns:"32px 1fr 1.2fr 0.8fr 0.6fr",
-                  gap:"4px", padding:"10px 16px",
-                  borderBottom:"1px solid #202020",
-                  alignItems:"center",
-                }}>
-                  <div>
-                    <input type="checkbox" checked={selected.size === results.length} onChange={toggleAll}
-                      style={{accentColor:"#7C89B0", width:"14px", height:"14px", cursor:"pointer"}} />
-                  </div>
-                  <span className="tile-sub" style={{fontSize:"9px", textAlign:"left"}}>NAME</span>
-                  <span className="tile-sub" style={{fontSize:"9px", textAlign:"left"}}>ADDRESS</span>
-                  <span className="tile-sub" style={{fontSize:"9px", textAlign:"left"}}>PHONE</span>
-                  <span className="tile-sub" style={{fontSize:"9px", textAlign:"center"}}>RATING</span>
-                </div>
-                {results.map((r, i) => (
-                  <div key={i} style={{
-                    display:"grid",
-                    gridTemplateColumns:"32px 1fr 1.2fr 0.8fr 0.6fr",
-                    gap:"4px", padding:"10px 16px",
-                    borderBottom:"1px solid #202020",
-                    alignItems:"center",
-                    background: selected.has(i) ? "#1a1a1a" : "transparent",
-                    transition:"background 0.1s",
-                  }}
-                    onMouseEnter={e => { if (!selected.has(i)) e.currentTarget.style.background = "#181818" }}
-                    onMouseLeave={e => { if (!selected.has(i)) e.currentTarget.style.background = "transparent" }}>
-                    <div>
-                      <input type="checkbox" checked={selected.has(i)}
-                        onChange={() => { const n = new Set(selected); n.has(i) ? n.delete(i) : n.add(i); setSelected(n) }}
-                        style={{accentColor:"#7C89B0", width:"14px", height:"14px", cursor:"pointer"}} />
+                {activeTab === 'basic' && (
+                  <>
+                    <div style={{display:"grid", gridTemplateColumns:"32px 1.5fr 1.2fr 0.8fr 0.6fr 0.6fr", gap:"4px", padding:"10px 16px", borderBottom:"1px solid #202020", alignItems:"center"}}>
+                      <div><input type="checkbox" checked={selected.size === results.length} onChange={toggleAll} style={{accentColor:"#7C89B0", width:"14px", height:"14px", cursor:"pointer"}} /></div>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"left"}}>NAME</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"left"}}>ADDRESS</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"left"}}>PHONE</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"center"}}>RATING</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"center"}}>REVIEWS</span>
                     </div>
-                    <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"11px", color:"#ffffff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"block", maxWidth:"250px"}}>
-                      {r.name || '—'}
-                    </span>
-                    <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#6B7280", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"block", maxWidth:"250px"}}>
-                      {r.address || '—'}
-                    </span>
-                    <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#6B7280"}}>
-                      {r.phone || '—'}
-                    </span>
-                    <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", textAlign:"center", color: r.rating ? "#7C89B0" : "#6B7280"}}>
-                      {r.rating || '—'}
-                    </span>
-                  </div>
-                ))}
+                    {results.map((r, i) => (
+                      <div key={i} style={{display:"grid", gridTemplateColumns:"32px 1.5fr 1.2fr 0.8fr 0.6fr 0.6fr", gap:"4px", padding:"10px 16px", borderBottom:"1px solid #202020", alignItems:"center", background: selected.has(i) ? "#1a1a1a" : "transparent", transition:"background 0.1s"}}
+                        onMouseEnter={e => { if (!selected.has(i)) e.currentTarget.style.background = "#181818" }}
+                        onMouseLeave={e => { if (!selected.has(i)) e.currentTarget.style.background = "transparent" }}>
+                        <div><input type="checkbox" checked={selected.has(i)} onChange={() => { const n = new Set(selected); n.has(i) ? n.delete(i) : n.add(i); setSelected(n) }} style={{accentColor:"#7C89B0", width:"14px", height:"14px", cursor:"pointer"}} /></div>
+                        <div style={{maxWidth:"250px", overflow:"hidden"}}>
+                          {cell(r.name)}
+                          {r.category && <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"8px", color:"#7C89B0", display:"block"}}>{r.category}</span>}
+                        </div>
+                        {cell(r.address)}
+                        {cell(r.phone)}
+                        <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", textAlign:"center", color: r.rating ? "#7C89B0" : "#6B7280"}}>
+                          {r.rating ? `${r.rating}★` : '—'}
+                        </span>
+                        <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", textAlign:"center", color: "#6B7280"}}>
+                          {r.reviewCount || '—'}
+                        </span>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {activeTab === 'details' && (
+                  <>
+                    <div style={{display:"grid", gridTemplateColumns:"32px 1.2fr 1.5fr 1fr 0.8fr 0.8fr", gap:"4px", padding:"10px 16px", borderBottom:"1px solid #202020", alignItems:"center"}}>
+                      <div></div>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"left"}}>WEBSITE</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"left"}}>STATUS / HOURS</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"left"}}>PRICE</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"center"}}>TIMEZONE</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"center"}}>PLUS CODE</span>
+                    </div>
+                    {results.map((r, i) => (
+                      <div key={i} style={{display:"grid", gridTemplateColumns:"32px 1.2fr 1.5fr 1fr 0.8fr 0.8fr", gap:"4px", padding:"10px 16px", borderBottom:"1px solid #202020", alignItems:"center", background:"transparent"}}>
+                        <div></div>
+                        <div style={{maxWidth:"200px", overflow:"hidden"}}>
+                          {r.website ? <a href={r.website} target="_blank" rel="noopener noreferrer" style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#7C89B0", textDecoration:"underline", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"block"}}>{r.website}</a> : cell(null)}
+                        </div>
+                        <div>
+                          <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", color: r.status ? "#ffffff" : "#6B7280", display:"block"}}>{r.status || '—'}</span>
+                          {r.openHours && r.openHours.Monday && <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"8px", color:"#6B7280"}}>{r.openHours.Monday[0]}</span>}
+                        </div>
+                        <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color: r.priceRange ? "#7C89B0" : "#6B7280"}}>{r.priceRange || '—'}</span>
+                        <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", textAlign:"center", color:"#6B7280"}}>{r.timezone || '—'}</span>
+                        <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", textAlign:"center", color:"#6B7280"}}>{r.plusCode || '—'}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {activeTab === 'reviews' && (
+                  <>
+                    <div style={{display:"grid", gridTemplateColumns:"32px 1.2fr 0.5fr 0.5fr 2fr", gap:"4px", padding:"10px 16px", borderBottom:"1px solid #202020", alignItems:"center"}}>
+                      <div></div>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"left"}}>AUTHOR</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"center"}}>RATING</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"center"}}>EMAILS</span>
+                      <span className="tile-sub" style={{fontSize:"9px",textAlign:"left"}}>REVIEW TEXT</span>
+                    </div>
+                    {results.map((r, i) => {
+                      const reviews = r.userReviews || []
+                      const emails = r.emails || []
+                      const firstReview = reviews[0]
+                      return (
+                        <div key={i} style={{display:"grid", gridTemplateColumns:"32px 1.2fr 0.5fr 0.5fr 2fr", gap:"4px", padding:"10px 16px", borderBottom:"1px solid #202020", alignItems:"start", background: selected.has(i) ? "#1a1a1a" : "transparent"}}>
+                          <div><input type="checkbox" checked={selected.has(i)} onChange={() => { const n = new Set(selected); n.has(i) ? n.delete(i) : n.add(i); setSelected(n) }} style={{accentColor:"#7C89B0", width:"14px", height:"14px", cursor:"pointer"}} /></div>
+                          <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", color:"#ffffff"}}>{r.name}</span>
+                          <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"10px", textAlign:"center", color: r.rating ? "#7C89B0" : "#6B7280"}}>{r.rating ? `${r.rating}★` : '—'}</span>
+                          <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", textAlign:"center", color: emails.length ? "#7C89B0" : "#6B7280"}}>{emails.length || '—'}</span>
+                          <span style={{fontFamily:"IBM Plex Mono,monospace", fontSize:"9px", color:"#6B7280", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", display:"block"}}>
+                            {firstReview ? `${firstReview.authorName}: "${firstReview.description}"` : '—'}
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
               </div>
 
               <div style={{padding:"12px 20px", borderTop:"1px solid #202020", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
