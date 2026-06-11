@@ -186,7 +186,6 @@ public class LeadService {
         repository.deleteAll();
         return (int) count;
     }
-    }
 
     public int importLeads(List<Map<String, Object>> leadsData) {
         List<Lead> leads = new ArrayList<>();
